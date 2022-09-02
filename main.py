@@ -5,6 +5,7 @@ from fake_useragent import UserAgent
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
+from ebooklib import epub
 novelurl = "https://www.pixiv.net/novel/show.php?id="
 seriesurl = "https://www.pixiv.net/novel/series/"
 if not os.path.exists("novels"):
@@ -14,7 +15,8 @@ if not os.path.exists("novel.json"):
         data = {
             "download_nsfw": False,
             "download_series": False,
-            "cookie": ""
+            "cookie": "",
+            "download_mod": "txt" # txt or epub
         }
         json.dump(data, f, indent=4)
     print("Please read README and edit the novel.json")
@@ -33,6 +35,14 @@ else:
         "Cookie": data["cookie"]
     }
 
+
+def download_epub(url):
+    book = epub.EpubBook()
+    book.set_identifier(f'pixiv-novel-{url[0]["seriesTitle"]}')
+    book.set_title(url[0]["seriesTitle"])
+    book.set_language('en')
+    book.add_author('pixiv downloader')
+    ...
 
 def download(url):
     if novelurl in url["url"]:
@@ -57,14 +67,26 @@ def download(url):
                 "body"]["seriesContents"]
             if series == []:
                 break
-            for i in series:
-                download(
-                    {
-                        "url": novelurl + str(i["id"]),
-                        "title": i["title"],
-                        "seriesTitle": url['seriesTitle']
-                    }
-                )
+            if data["download_mod"] == "txt":
+                for i in series:
+                    download(
+                        {
+                            "url": novelurl + str(i["id"]),
+                            "title": i["title"],
+                            "seriesTitle": url['seriesTitle']
+                        }
+                    )
+            else:
+                urls = []
+                for i in series:
+                    urls.append(
+                        {
+                            "url": novelurl + str(i["id"]),
+                            "title": i["title"],
+                            "seriesTitle": url['seriesTitle']
+                        }
+                    )
+                download_epub(urls)
             now += 30
 
 
