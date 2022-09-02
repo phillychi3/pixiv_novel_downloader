@@ -40,36 +40,32 @@ def download(url):
         r = requests.get(url["url"], headers=header)
         text = re.findall(r'"content":"(.*?)","coverUrl"', r.text)[0]
         text = text.replace(r"\n", "\n")
+        url["title"] = re.sub('[\/:*?"<>|，]', '-', url["title"])
         if "seriesTitle" in url:
             with open(f"novels/{url['seriesTitle']}/{url['title']}.txt", "w", encoding="utf-8") as f:
                 f.write(text)
         else:
             with open(f"novels/{url['title']}.txt", "w", encoding="utf-8") as f:
                 f.write(text)
-
-        return
     else:
         now = 0
         if not os.path.exists(f"novels/{url['seriesTitle']}"):
             os.mkdir(f"novels/{url['seriesTitle']}")
         while True:
-            series = requests.get(f"{url['url']}?limit=30&last_order{str(now)}&order_by=asc&lang=zh_tw", headers=header).json()[
+            series = []
+            series = requests.get(f"{url['url']}?limit=30&last_order={str(now)}&order_by=asc&lang=zh_tw", headers=header).json()[
                 "body"]["seriesContents"]
             if series == []:
                 break
-            urls = []
             for i in series:
-                urls.append(
+                download(
                     {
                         "url": novelurl + str(i["id"]),
                         "title": i["title"],
                         "seriesTitle": url['seriesTitle']
                     }
                 )
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                executor.map(download, urls)
             now += 30
-        return
 
 
 def main():
@@ -77,8 +73,7 @@ def main():
     now = 0
     while True:
         book = requests.get(
-            # f"https://www.pixiv.net/ajax/user/{str(userid)}/novels/bookmarks?tag=&offset={str(now)}&limit=48&rest=show&lang=zh_tw#", headers=header).json()
-            f"https://www.pixiv.net/ajax/user/{str(userid)}/novels/bookmarks?tag=&offset={str(now)}&limit=10&rest=show&lang=zh_tw#", headers=header).json()
+            f"https://www.pixiv.net/ajax/user/{str(userid)}/novels/bookmarks?tag=&offset={str(now)}&limit=48&rest=show&lang=zh_tw#", headers=header).json()
         bookmark = book["body"]["works"]
         if bookmark == []:
             break
@@ -111,8 +106,8 @@ def main():
                             "title": i["title"]
                         }
                     )
-                with ThreadPoolExecutor(max_workers=5) as executor:
-                    executor.map(download, urls)
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            executor.map(download, urls)
         now += 48
 
 
