@@ -42,7 +42,26 @@ def download_epub(url):
     book.set_title(url[0]["seriesTitle"])
     book.set_language('en')
     book.add_author('pixiv downloader')
-    ...
+    ct = 0
+    for i in url:
+        r = requests.get(i["url"], headers=header)
+        text = re.findall(r'"content":"(.*?)","coverUrl"', r.text)[0]
+        print("ttt")
+        sp = text.split(r'\n\n')
+        eptext = ""
+        if len(sp)< 10:
+            sp = text.split(r'\n')
+        for i in sp:
+            i = "<p>" + i + "</p>"
+            eptext += i
+        i["title"] = re.sub('[\/:*?"<>|，]', '-', i["title"])
+        c1 = epub.EpubHtml(title=i["title"], file_name=f'{ct}.xhtml', lang='en')
+        c1.content = eptext
+        
+        book.add_item(c1)
+        
+        ct+=1
+    epub.write_epub(f'novels/{url[0]["seriesTitle"]}.epub', book, {})
 
 def download(url):
     if novelurl in url["url"]:
@@ -59,7 +78,7 @@ def download(url):
                 f.write(text)
     else:
         now = 0
-        if not os.path.exists(f"novels/{url['seriesTitle']}"):
+        if not os.path.exists(f"novels/{url['seriesTitle']}") and data["download_mod"] == "txt":
             os.mkdir(f"novels/{url['seriesTitle']}")
         while True:
             series = []
@@ -106,6 +125,8 @@ def main():
             else:
                 if "seriesId" in i:
                     if data["download_series"]:
+                        if i["seriesTitle"] in os.listdir("novels"):
+                            continue
                         urls.append(
                             {
                                 "url": f"https://www.pixiv.net/ajax/novel/series_content/{i['seriesId']}",
