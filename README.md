@@ -1,14 +1,12 @@
 # Pixiv bookmark downloader
 
 ## install
----
 
 ```bash
 pip install -r ".\requirements.txt"
 
 ```
 ## use 
----
 first:
 ```
 python main.py
